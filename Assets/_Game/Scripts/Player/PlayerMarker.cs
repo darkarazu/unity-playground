@@ -57,6 +57,10 @@ namespace Game.Player
 
         private void UpdateMarkerPosition()
         {
+            // Check if EntityManager is still valid
+            if (entityManager == null)
+                return;
+                
             // Update the marker entity's position to match the player GameObject
             if (entityManager.Exists(markerEntity))
             {

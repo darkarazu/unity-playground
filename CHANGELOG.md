@@ -5,6 +5,58 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2025-11-25
+
+### Third Person Camera System - WoW-Style Controls
+
+#### Added
+- **Cinemachine Integration**: Professional 3rd person camera using Cinemachine 3.x
+  - FreeLook camera with three orbital rigs (Top/Center/Bottom)
+  - Smooth camera follow and orbit behavior
+  - Damping for smooth transitions
+- **CameraController**: WoW-style camera control system
+  - **Left Mouse Button (LMB)**: Orbit camera around player (view only)
+  - **Right Mouse Button (RMB)**: Smoothly rotate player to face camera direction
+  - **Scroll Wheel**: Zoom in/out with proportional scaling (radius + height)
+  - **Dynamic FOV**: Smooth transitions between normal and sprint FOV (only when moving)
+  - Mouse sensitivity settings (configurable)
+  - Zoom sensitivity and min/max distance settings
+  - Player rotation speed for smooth turning (Quaternion.Slerp)
+  - FOV settings (normal, sprint, transition speed)
+  - Invert Y-axis option
+  - Direct control of Cinemachine Orbital Follow axes
+  - Proportional zoom maintains orbital sphere shape
+  - FOV only widens when sprinting AND actually moving
+- **Camera Documentation**: `Camera.md` comprehensive guide
+  - Complete setup instructions for Cinemachine 3
+  - Troubleshooting section
+  - Customization options (distance, height, sensitivity, zoom, FOV, rotation)
+  - Architecture notes
+- **CinemachineBrain Setup**: Instructions for Main Camera configuration
+
+#### Changed
+- **PlayerController Movement**: Migrated to WoW-style strafe controls
+  - **W**: Move forward (relative to player facing)
+  - **S**: Move backward (relative to player facing)
+  - **A**: Strafe left (relative to player facing)
+  - **D**: Strafe right (relative to player facing)
+  - Removed automatic rotation toward movement direction
+  - Added `SetYRotation()` method for camera-controlled rotation
+- **Movement System**: Camera-relative instead of world-space
+  - Player rotation controlled by camera (RMB)
+  - Movement relative to player's current facing direction
+
+#### Dependencies
+- **Cinemachine 3.x**: Added as required package for camera system
+
+#### Technical Notes
+- Clean separation: CameraController handles camera/rotation, PlayerController handles movement
+- Compatible with existing NPC AI system (NPCs unaffected)
+- Uses Cinemachine 3 API (`CinemachineCamera`, `CinemachineOrbitalFollow`, `CinemachineRotationComposer`)
+- Input handled via Unity Input System (programmatic actions)
+
+---
+
 ## [0.3.0] - 2025-11-25
 
 ### Hybrid Architecture - MonoBehaviour Player

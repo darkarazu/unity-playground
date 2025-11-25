@@ -13,8 +13,11 @@ This project showcases best practices for using Unity's Entity Component System 
 ## ✨ Features
 
 ### Player Controller (MonoBehaviour)
+- MMORPG-style 3rd person camera with Cinemachine
 - Third-person character movement using Unity's built-in `CharacterController`
-- Input handling: WASD movement, jumping, sprinting, crouching
+- Strafe movement: W/S forward/back, A/D left/right
+- LMB: Orbit camera (view only), RMB: Rotate player with camera
+- Input handling: jumping, sprinting, crouching
 - Supports both keyboard/mouse and gamepad controls
 - Easy to extend with animations, UI, and Unity features
 
@@ -25,6 +28,14 @@ This project showcases best practices for using Unity's Entity Component System 
 - Fully Burst-compiled and job-scheduled for performance
 - Visual debug gizmos for tuning AI parameters
 
+### Camera System (Cinemachine)
+- **Professional 3rd person camera** using Cinemachine 3.x
+- **LMB + Mouse**: Orbit camera around player (view only)
+- **RMB + Mouse**: Smoothly rotate player to face camera
+- **Scroll Wheel**: Proportional zoom (maintains orbital shape)
+- **Dynamic FOV**: Widen field of view when sprinting
+- Configurable sensitivity, transitions, and camera distance
+
 ### Hybrid Architecture
 - **PlayerMarker** component bridges MonoBehaviour player with ECS NPCs
 - NPCs detect player using ECS queries (`PlayerTag`)
@@ -34,6 +45,7 @@ This project showcases best practices for using Unity's Entity Component System 
 ## 📦 Dependencies
 
 - **Unity 6** (required)
+- **Cinemachine 3.x** (`com.unity.cinemachine`) - **NEW!**
 - **Unity ECS** (`com.unity.entities`)
 - **Unity Physics** (`com.unity.physics`)
 - **Unity Character Controller** (`com.unity.charactercontroller`)
@@ -64,18 +76,30 @@ Critical for hybrid architecture:
 
 **Why subscene?** Physics Shape must be baked to work with ECS physics, while standard colliders work for MonoBehaviour player.
 
-### 3. Create Player
+### 3. Setup Camera System (NEW!)
+
+1. Install **Cinemachine** package (Window → Package Manager)
+2. Select **Main Camera** → Add **Cinemachine Brain** component
+3. Create **FreeLook Camera** (GameObject → Cinemachine → FreeLook Camera)
+4. Configure camera (see `Camera.md` for detailed steps)
+
+**See full guide:** `Assets/_Game/Instructives/Camera.md`
+
+### 4. Create Player
 
 1. Create GameObject named "Player"
 2. Add components:
    - `CharacterController` (Unity built-in)
    - `PlayerController` (handles movement)
    - `PlayerMarker` (creates ECS entity for NPC detection)
-3. Optional: Add visual mesh (Capsule)
+   - `CameraController` (handles camera and rotation) - **NEW!**
+3. In CameraController:
+   - Drag FreeLook Camera to **Free Look Camera** field
+4. Optional: Add visual mesh (Capsule)
 
-**See full guide:** `Assets/_Game/Instructives/Playable_Character.md`
+**See full guide:** `Assets/_Game/Instructives/Playable_Character.md` and `Camera.md`
 
-### 4. Create NPCs
+### 5. Create NPCs
 
 1. Create GameObject in the subscene
 2. Add components:
@@ -87,14 +111,18 @@ Critical for hybrid architecture:
 
 ## 🎮 Controls
 
-| Action           | Keyboard   | Gamepad                |
-| ---------------- | ---------- | ---------------------- |
-| Move             | WASD       | Left Stick             |
-| Jump             | Space      | South Button (A/X)     |
-| Sprint           | Left Shift | Left Stick Press       |
-| Crouch :warning: | Left Ctrl  | East Button (B/Circle) |
+| Action            | Input                   | Description                      |
+| ----------------- | ----------------------- | -------------------------------- |
+| **Movement**      | WASD / Left Stick       | Strafe (Forward/Back/Left/Right) |
+| **Orbit Camera**  | LMB + Mouse             | Rotate camera around player      |
+| **Rotate Player** | RMB + Mouse             | Rotate player to face camera     |
+| **Zoom Camera**   | Scroll Wheel            | Zoom in/out                      |
+| **Jump**          | Space / Button South    | Jump                             |
+| **Sprint**        | Left Shift / L3         | Run faster                       |
+| **Crouch** ⚠️      | Left Ctrl / Button East | Crouch (not yet implemented)     |
 
-:warning: Not yet implemented
+⚠️ = Feature marked for future implementation
+
 
 ## 📁 Project Structure
 
@@ -170,6 +198,7 @@ PlayerMarker → Creates ECS entity with PlayerTag → NPCs query for player
 This project demonstrates:
 - ✅ Unity 6 ECS hybrid architecture
 - ✅ MonoBehaviour and ECS coexistence
+- ✅ Cinemachine 3.x professional camera system
 - ✅ Dynamic entity queries (PlayerTag detection)
 - ✅ Subscene baking workflow
 - ✅ Burst compilation and job scheduling
@@ -178,7 +207,7 @@ This project demonstrates:
 
 ## 📝 Version
 
-**Current Version:** 0.3.0
+**Current Version:** 0.4.0
 
 See [CHANGELOG.md](CHANGELOG.md) for detailed version history.
 

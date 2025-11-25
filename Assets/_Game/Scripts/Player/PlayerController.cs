@@ -36,6 +36,7 @@ namespace Game.Player
 
         // Components
         private CharacterController characterController;
+        private CameraController cameraController;
         
         // Input
         private InputAction moveAction;
@@ -52,6 +53,7 @@ namespace Game.Player
         private void Awake()
         {
             characterController = GetComponent<CharacterController>();
+            cameraController = GetComponent<CameraController>();
             SetupInput();
         }
 
@@ -120,8 +122,12 @@ namespace Game.Player
             else if (isCrouching)
                 currentSpeed = crouchSpeed;
 
-            // Calculate movement direction (world space)
-            Vector3 move = new Vector3(input.x, 0, input.y);
+            // Calculate movement direction relative to player facing (WoW-style strafe)
+            // W/S = forward/backward relative to player
+            // A/D = strafe left/right relative to player
+            Vector3 forward = transform.forward;
+            Vector3 right = transform.right;
+            Vector3 move = (forward * input.y) + (right * input.x);
 
             // Apply movement
             characterController.Move(move * currentSpeed * Time.deltaTime);
@@ -135,12 +141,8 @@ namespace Game.Player
             velocity.y -= gravity * Time.deltaTime;
             characterController.Move(velocity * Time.deltaTime);
 
-            // Rotate player to face movement direction
-            if (move.magnitude > 0.1f)
-            {
-                Quaternion targetRotation = Quaternion.LookRotation(move);
-                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 10f);
-            }
+            // Player rotation is now controlled by CameraController (RMB)
+            // No automatic rotation toward movement direction
         }
 
         private void HandleJump()
@@ -151,10 +153,21 @@ namespace Game.Player
             }
         }
 
+        /// <summary>
+        /// Sets the player's Y rotation (called by CameraController when RMB held)
+        /// </summary>
+        public void SetYRotation(float yAngle)
+        {
+            transform.rotation = Quaternion.Euler(0, yAngle, 0);
+        }
+
         // Public getters for debugging/external systems
         public bool IsGrounded => isGrounded;
         public bool IsSprinting => isSprinting;
         public bool IsCrouching => isCrouching;
         public Vector3 Velocity => velocity;
+        
+        // Check if player has horizontal movement
+        public bool IsMoving => characterController.velocity.sqrMagnitude > 0.1f;
     }
 }

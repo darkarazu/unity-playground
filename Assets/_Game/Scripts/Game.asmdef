@@ -2,6 +2,7 @@
     "name": "Game",
     "rootNamespace": "Game",
     "references": [
+        "Unity.Cinemachine",
         "Unity.Entities",
         "Unity.Entities.Hybrid",
         "Unity.Physics",
