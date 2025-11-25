@@ -69,7 +69,7 @@ namespace Game.Systems
             var sprintPressed = _sprintAction.IsPressed();
             var crouchPressed = _crouchAction.IsPressed();
 
-            foreach (var inputData in SystemAPI.Query<RefRW<CharacterInputData>>())
+            foreach (var inputData in SystemAPI.Query<RefRW<CharacterInputData>>().WithAll<PlayerTag>())
             {
                 inputData.ValueRW.MoveInput = moveInput;
                 inputData.ValueRW.JumpPressed = jumpPressed;

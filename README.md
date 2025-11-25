@@ -7,6 +7,43 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## Changelog
 
+### [0.2.0] - 2025-11-25
+**NPC AI System Implementation**
+
+#### Added
+- **NPC AI System**: Complete AI behavior system for non-player characters
+  - **Tag Components**: `PlayerTag` and `NPCTag` for entity identification
+  - **AI Components**: 
+    - `NPCPatrolData` for patrol area configuration
+    - `NPCTargetData` for target tracking and follow behavior
+    - `NPCStateData` for AI state machine (Patrolling/Following/Returning)
+  - **NPCAISystem**: ECS system generating AI input for NPCs
+    - Patrol behavior: Random waypoints within configurable radius
+    - Follow behavior: Detects and follows player using PlayerTag
+    - Return behavior: Returns to patrol area when too far from center
+    - Dynamic player detection using PlayerTag query (works across subscenes)
+  - **NPCAuthoring**: Unity Inspector component for NPC configuration
+    - Visual debug gizmos for patrol area, detection range, and boundaries
+    - All parameters configurable in Inspector
+- **Documentation**: `NPC_AI.md` setup guide with examples and troubleshooting
+
+#### Changed
+- **CharacterAuthoring**: Added `IsPlayerControlled` field to distinguish players from NPCs
+- **CharacterInputSystem**: Updated to filter player entities using `PlayerTag`
+- **Architecture**: Demonstrates input reusability - both players and NPCs use `CharacterInputData`, populated by different systems
+
+#### Fixed
+- Unity 6 API compatibility issues with `SystemAPI.Time` and readonly references
+- Dynamic player entity detection resolving subscene entity reference issues
+- System update ordering warnings
+- Gizmo visibility improvements with better color opacity
+
+#### Technical Notes
+- Full Burst compilation and job scheduling support
+- Scales efficiently with many NPCs
+- Works in both hierarchy and subscene workflows
+- Compatible with Unity 6 ECS
+
 ### [0.1.0] - 2025-11-24
 **Initial Release - ECS Character Controller Prototype**
 
@@ -97,6 +134,17 @@ For testing purposes:
 - **Space** / **South Button (A/X)**: Jump
 - **Left Shift** / **Left Stick Press**: Sprint
 - **Left Ctrl** / **East Button (B/Circle)**: Crouch
+
+### NPC AI System (v0.2.0+)
+NPCs with patrol, follow, and return behaviors are now supported! 
+
+**Quick Setup:**
+1. Create a GameObject with both `CharacterAuthoring` and `NPCAuthoring` components
+2. Set `Is Player Controlled` to **false** on `CharacterAuthoring`
+3. Configure patrol radius and follow distances in `NPCAuthoring`
+4. NPCs automatically detect and follow the player using `PlayerTag`
+
+**See full documentation:** `Assets/_Game/Instructives/NPC_AI.md`
 
 ### Troubleshooting
 - **"Physics Shape" component not found**: Import the "Physics Custom" sample from the Unity Physics package
