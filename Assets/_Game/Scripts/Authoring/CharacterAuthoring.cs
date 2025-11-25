@@ -14,7 +14,8 @@ namespace Game.Authoring
         public float RunSpeed = 10f;
         public float CrouchSpeed = 2.5f;
         public float JumpHeight = 5f;
-        public bool IsPlayerControlled = true;
+        // Note: CharacterAuthoring is now used exclusively for NPCs
+        // Players use the MonoBehaviour PlayerController component
         public AuthoringKinematicCharacterProperties CharacterProperties = AuthoringKinematicCharacterProperties.GetDefault();
 
         public class CharacterBaker : Baker<CharacterAuthoring>
@@ -34,11 +35,8 @@ namespace Game.Authoring
                 AddComponent(entity, new CharacterInputData());
                 AddComponent(entity, new CharacterState());
 
-                // Add PlayerTag if this is player-controlled
-                if (authoring.IsPlayerControlled)
-                {
-                    AddComponent<PlayerTag>(entity);
-                }
+                // Note: NPCAuthoring adds NPCTag, not this component
+                // The MonoBehaviour player uses PlayerMarker to add PlayerTag
 
                 // Add Kinematic Character Body components
                 // BakeCharacter expects (Baker, GameObject, AuthoringKinematicCharacterProperties)

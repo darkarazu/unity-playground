@@ -22,10 +22,10 @@ The NPC AI system reuses your existing character movement infrastructure. NPCs u
 1. **Create a new GameObject** in your scene (e.g., "NPC_Guard")
 2. **Add a visual mesh** (e.g., a Capsule or your character model)
 3. **Add the `CharacterAuthoring` component**
-   - Set `Is Player Controlled` to **false** (unchecked)
    - Configure movement speeds (Walk Speed, Run Speed, etc.)
    - Configure `Character Properties` as needed
    - This component handles physics and movement setup
+   - **Note**: CharacterAuthoring is now used exclusively for NPCs (v0.3.0+)
 4. **Add the `NPCAuthoring` component** (on the same GameObject)
    - This component adds AI behavior
 5. Unity will automatically bake the NPC entity with all required components
@@ -120,23 +120,24 @@ Simply place NPCs directly in your scene hierarchy. The `Baker` will automatical
 
 ## Setting Up the Player
 
-**Important:** The `PlayerTag` is an ECS component, NOT Unity's GameObject Tag!
+**The player is now MonoBehaviour-based (v0.3.0+)!**
 
-### How to Add PlayerTag to Your Player:
+NPCs automatically detect the player using the `PlayerTag` component. The `PlayerMarker` component on your player GameObject creates an ECS entity that NPCs can find.
 
-1. Select your **Player GameObject** in the hierarchy
-2. Find the `CharacterAuthoring` component in the Inspector
-3. Check the checkbox: **`Is Player Controlled` = true** ✓
-4. This will automatically bake the `PlayerTag` component onto the player entity
+### Quick Player Setup:
 
-**Common Mistake:** Don't use Unity's Tag dropdown at the top of the Inspector - that's completely separate from ECS tags!
+1. Create a GameObject with `PlayerController` and `PlayerMarker` components
+2. NPCs will automatically detect and follow it - no configuration needed!
 
 ### Verification
 
 Your player should have:
-- ✅ `CharacterAuthoring` with `Is Player Controlled` = **true**
-- ✅ Player input responding (WASD movement)
-- ✅ NPCs should now detect and follow when in range
+- ✅ `PlayerController` component for movement
+- ✅ `PlayerMarker` component for NPC detection
+- ✅ Unity's `CharacterController` component
+- ✅ NPCs should detect and follow when in range
+
+**See full player setup guide:** [Playable_Character.md](file:///d:/Unity%20Projects/My%20project/Assets/_Game/Instructives/Playable_Character.md)
 
 ---
 
