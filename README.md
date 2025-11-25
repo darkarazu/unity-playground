@@ -1,277 +1,191 @@
-# Unity ECS Project
+# Unity ECS Hybrid Project
 
-Welcome to the Unity ECS Project! This project is built using Unity's Entity Component System (ECS) to leverage high-performance data-oriented design.
+A Unity 6 project demonstrating **hybrid architecture** with MonoBehaviour player character and ECS-powered NPCs.
 
-## Versioning
-This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## 🎯 Project Overview
 
-## Changelog
+This project showcases best practices for using Unity's Entity Component System (ECS) alongside traditional MonoBehaviour workflows. The architecture uses:
 
-### [0.3.0] - 2025-11-25
-**Hybrid Architecture - MonoBehaviour Player**
+- **MonoBehaviour** for the player character (simple, familiar, easy to extend)
+- **ECS** for NPC AI and systems (high performance, scalable)
+- **Shared Physics** ground setup that works with both systems
 
-#### Changed
-- **Player Architecture**: Migrated player from ECS to MonoBehaviour
-  - Created `PlayerController` MonoBehaviour for input and movement
-  - Uses Unity's built-in `CharacterController` for physics
-  - Simpler code, easier integration with Unity features
-  - Traditional workflow for single-character control
-- **PlayerMarker System**: Bridge between MonoBehaviour player and ECS NPCs
-  - Creates minimal ECS entity with `PlayerTag` and `LocalTransform`
-  - Automatically syncs position with player GameObject
-  - Allows NPCs to detect player using ECS queries
-- **CharacterAuthoring**: Now used exclusively for NPCs
-  - Removed `IsPlayerControlled` field
-  - Simplified to NPC-only use case
-  - PlayerTag baking removed (handled by PlayerMarker)
-- **Hybrid Architecture**: Best of both worlds
-  - MonoBehaviour for player (simplicity, Unity integration)
-  - ECS for NPCs (performance, scalability)
+## ✨ Features
 
-#### Added
-- **PlayerController**: Full-featured MonoBehaviour player controller
-  - Input handling using Unity Input System
-  - Movement: walk, run, crouch speeds
-  - Jumping with configurable height
-  - Gravity with ground detection
-  - Same controls as previous ECS version
-- **PlayerMarker**: Automatic ECS entity creation and sync
-  - Creates entity with PlayerTag on Start
-  - Updates position every frame
-  - Cleans up entity on Destroy
-- **Documentation**: `Playable_Character.md` comprehensive setup guide
+### Player Controller (MonoBehaviour)
+- Third-person character movement using Unity's built-in `CharacterController`
+- Input handling: WASD movement, jumping, sprinting, crouching
+- Supports both keyboard/mouse and gamepad controls
+- Easy to extend with animations, UI, and Unity features
 
-#### Removed
-- **CharacterInputSystem**: No longer needed for player (NPCs still use their own AI input)
-- **ECS Player Complexity**: Eliminated ECS overhead for single player character
+### NPC AI System (ECS)
+- **Patrol behavior**: NPCs roam within configurable areas
+- **Follow behavior**: NPCs detect and chase the player
+- **Return behavior**: NPCs return to patrol area when too far from center
+- Fully Burst-compiled and job-scheduled for performance
+- Visual debug gizmos for tuning AI parameters
 
-#### Technical Notes
-- NPCs unchanged - still use ECS and detect player via PlayerTag
-- Clean separation: GameObject player, Entity NPCs
-- Minimal performance overhead (one entity update per frame)
-- Easy to extend player with animations, UI, audio
+### Hybrid Architecture
+- **PlayerMarker** component bridges MonoBehaviour player with ECS NPCs
+- NPCs detect player using ECS queries (`PlayerTag`)
+- Ground works for both physics systems (standard colliders + Physics Shape)
+- Clean separation of concerns
 
-### [0.2.0] - 2025-11-25
-**NPC AI System Implementation**
+## 📦 Dependencies
 
-#### Added
-- **NPC AI System**: Complete AI behavior system for non-player characters
-  - **Tag Components**: `PlayerTag` and `NPCTag` for entity identification
-  - **AI Components**: 
-    - `NPCPatrolData` for patrol area configuration
-    - `NPCTargetData` for target tracking and follow behavior
-    - `NPCStateData` for AI state machine (Patrolling/Following/Returning)
-  - **NPCAISystem**: ECS system generating AI input for NPCs
-    - Patrol behavior: Random waypoints within configurable radius
-    - Follow behavior: Detects and follows player using PlayerTag
-    - Return behavior: Returns to patrol area when too far from center
-    - Dynamic player detection using PlayerTag query (works across subscenes)
-  - **NPCAuthoring**: Unity Inspector component for NPC configuration
-    - Visual debug gizmos for patrol area, detection range, and boundaries
-    - All parameters configurable in Inspector
-- **Documentation**: `NPC_AI.md` setup guide with examples and troubleshooting
+- **Unity 6** (required)
+- **Unity ECS** (`com.unity.entities`)
+- **Unity Physics** (`com.unity.physics`)
+- **Unity Character Controller** (`com.unity.charactercontroller`)
+- **Unity Input System** (`com.unity.inputsystem`)
+- **Unity Collections** (`com.unity.collections`)
+- **Unity Burst** (`com.unity.burst`)
 
-#### Changed
-- **CharacterAuthoring**: Added `IsPlayerControlled` field to distinguish players from NPCs
-- **CharacterInputSystem**: Updated to filter player entities using `PlayerTag`
-- **Architecture**: Demonstrates input reusability - both players and NPCs use `CharacterInputData`, populated by different systems
+## 🚀 Quick Start
 
-#### Fixed
-- Unity 6 API compatibility issues with `SystemAPI.Time` and readonly references
-- Dynamic player entity detection resolving subscene entity reference issues
-- System update ordering warnings
-- Gizmo visibility improvements with better color opacity
-
-#### Technical Notes
-- Full Burst compilation and job scheduling support
-- Scales efficiently with many NPCs
-- Works in both hierarchy and subscene workflows
-- Compatible with Unity 6 ECS
-
-### [0.1.0] - 2025-11-24
-**Initial Release - ECS Character Controller Prototype**
-
-#### Added
-- **Project Structure**: Established `Assets/_Game/` directory structure separating user content from third-party assets.
-- **ECS Architecture**: Implemented core ECS folder structure (`Components`, `Systems`, `Authoring`).
-- **Character Controller**:
-    - Implemented `KinematicCharacterBody` using `com.unity.charactercontroller`.
-    - Created `CharacterData` (config), `CharacterInputData` (input), and `CharacterState` (runtime flags).
-    - Added `CharacterInputSystem` for input processing and `CharacterMovementSystem` for physics-based movement.
-    - Added `CharacterAuthoring` component for entity conversion.
-- **Input System**:
-    - Integrated Unity Input System with `GameInput.inputactions`.
-    - Implemented actions: Move (WASD/Stick), Jump (Space/South), Sprint (Shift/Stick Press), Crouch (Ctrl/East).
-- **Documentation**: Added `CharacterControllerDocumentation.md` and `walkthrough.md`.
-- **Dependencies**: Added `com.unity.entities`, `com.unity.physics`, `com.unity.charactercontroller`, `com.unity.collections`, and `com.unity.burst`.
-
-## Getting Started
-
-### Prerequisites
-- Unity 6
-- ECS packages installed (see Changelog)
-- **Important:** Unity Physics "Physics Custom" sample must be imported (see Setup step 1)
-
-### Initial Setup Required
+### 1. Import Physics Samples (Required)
 
 > [!IMPORTANT]
-> Before creating characters, you must import the Physics samples to access the Physics Shape components.
+> You must import the Physics Custom sample to access Physics Shape components.
 
-#### 0. Import Physics Samples (Required)
 1. Open **Window** → **Package Manager**
-2. Find **"Physics"** package in the list
-# Unity ECS Project
-
-Welcome to the Unity ECS Project! This project is built using Unity's Entity Component System (ECS) to leverage high-performance data-oriented design.
-
-## Versioning
-This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
-## Changelog
-
-### [0.3.0] - 2025-11-25
-**Hybrid Architecture - MonoBehaviour Player**
-
-#### Changed
-- **Player Architecture**: Migrated player from ECS to MonoBehaviour
-  - Created `PlayerController` MonoBehaviour for input and movement
-  - Uses Unity's built-in `CharacterController` for physics
-  - Simpler code, easier integration with Unity features
-  - Traditional workflow for single-character control
-- **PlayerMarker System**: Bridge between MonoBehaviour player and ECS NPCs
-  - Creates minimal ECS entity with `PlayerTag` and `LocalTransform`
-  - Automatically syncs position with player GameObject
-  - Allows NPCs to detect player using ECS queries
-- **CharacterAuthoring**: Now used exclusively for NPCs
-  - Removed `IsPlayerControlled` field
-  - Simplified to NPC-only use case
-  - PlayerTag baking removed (handled by PlayerMarker)
-- **Hybrid Architecture**: Best of both worlds
-  - MonoBehaviour for player (simplicity, Unity integration)
-  - ECS for NPCs (performance, scalability)
-
-#### Added
-- **PlayerController**: Full-featured MonoBehaviour player controller
-  - Input handling using Unity Input System
-  - Movement: walk, run, crouch speeds
-  - Jumping with configurable height
-  - Gravity with ground detection
-  - Same controls as previous ECS version
-- **PlayerMarker**: Automatic ECS entity creation and sync
-  - Creates entity with PlayerTag on Start
-  - Updates position every frame
-  - Cleans up entity on Destroy
-- **Documentation**: `Playable_Character.md` comprehensive setup guide
-
-#### Removed
-- **CharacterInputSystem**: No longer needed for player (NPCs still use their own AI input)
-- **ECS Player Complexity**: Eliminated ECS overhead for single player character
-
-#### Technical Notes
-- NPCs unchanged - still use ECS and detect player via PlayerTag
-- Clean separation: GameObject player, Entity NPCs
-- Minimal performance overhead (one entity update per frame)
-- Easy to extend player with animations, UI, audio
-
-### [0.2.0] - 2025-11-25
-**NPC AI System Implementation**
-
-#### Added
-- **NPC AI System**: Complete AI behavior system for non-player characters
-  - **Tag Components**: `PlayerTag` and `NPCTag` for entity identification
-  - **AI Components**: 
-    - `NPCPatrolData` for patrol area configuration
-    - `NPCTargetData` for target tracking and follow behavior
-    - `NPCStateData` for AI state machine (Patrolling/Following/Returning)
-  - **NPCAISystem**: ECS system generating AI input for NPCs
-    - Patrol behavior: Random waypoints within configurable radius
-    - Follow behavior: Detects and follows player using PlayerTag
-    - Return behavior: Returns to patrol area when too far from center
-    - Dynamic player detection using PlayerTag query (works across subscenes)
-  - **NPCAuthoring**: Unity Inspector component for NPC configuration
-    - Visual debug gizmos for patrol area, detection range, and boundaries
-    - All parameters configurable in Inspector
-- **Documentation**: `NPC_AI.md` setup guide with examples and troubleshooting
-
-#### Changed
-- **CharacterAuthoring**: Added `IsPlayerControlled` field to distinguish players from NPCs
-- **CharacterInputSystem**: Updated to filter player entities using `PlayerTag`
-- **Architecture**: Demonstrates input reusability - both players and NPCs use `CharacterInputData`, populated by different systems
-
-#### Fixed
-- Unity 6 API compatibility issues with `SystemAPI.Time` and readonly references
-- Dynamic player entity detection resolving subscene entity reference issues
-- System update ordering warnings
-- Gizmo visibility improvements with better color opacity
-
-#### Technical Notes
-- Full Burst compilation and job scheduling support
-- Scales efficiently with many NPCs
-- Works in both hierarchy and subscene workflows
-- Compatible with Unity 6 ECS
-
-### [0.1.0] - 2025-11-24
-**Initial Release - ECS Character Controller Prototype**
-
-#### Added
-- **Project Structure**: Established `Assets/_Game/` directory structure separating user content from third-party assets.
-- **ECS Architecture**: Implemented core ECS folder structure (`Components`, `Systems`, `Authoring`).
-- **Character Controller**:
-    - Implemented `KinematicCharacterBody` using `com.unity.charactercontroller`.
-    - Created `CharacterData` (config), `CharacterInputData` (input), and `CharacterState` (runtime flags).
-    - Added `CharacterInputSystem` for input processing and `CharacterMovementSystem` for physics-based movement.
-    - Added `CharacterAuthoring` component for entity conversion.
-- **Input System**:
-    - Integrated Unity Input System with `GameInput.inputactions`.
-    - Implemented actions: Move (WASD/Stick), Jump (Space/South), Sprint (Shift/Stick Press), Crouch (Ctrl/East).
-- **Documentation**: Added `CharacterControllerDocumentation.md` and `walkthrough.md`.
-- **Dependencies**: Added `com.unity.entities`, `com.unity.physics`, `com.unity.charactercontroller`, `com.unity.collections`, and `com.unity.burst`.
-
-## Getting Started
-
-### Prerequisites
-- Unity 6
-- ECS packages installed (see Changelog)
-- **Important:** Unity Physics "Physics Custom" sample must be imported (see Setup step 1)
-
-### Initial Setup Required
-
-> [!IMPORTANT]
-> Before creating characters, you must import the Physics samples to access the Physics Shape components.
-
-#### 0. Import Physics Samples (Required)
-1. Open **Window** → **Package Manager**
-2. Find **"Physics"** package in the list
-3. Click on it, then go to the **Samples** tab
+2. Find **"Physics"** package
+3. Go to **Samples** tab
 4. Click **Import** next to **"Physics Custom"**
-5. This adds the Physics Shape authoring components needed for ECS
 
-### Setting Up the Player Character (v0.3.0+)
+### 2. Set Up Ground
 
-**The player now uses MonoBehaviour for simplicity!**
+Critical for hybrid architecture:
 
-### Troubleshooting
+1. Create a subscene (Right-click Hierarchy → New Sub Scene)
+2. Add a Plane inside the subscene
+3. Add **Physics Shape** component (Shape Type: Box)
+4. Close subscene to trigger baking
 
-**General:**
-- **"Physics Shape" component not found**: Import the "Physics Custom" sample from the Unity Physics package
-- **No entities visible**: Check the Entities Hierarchy window while in Play Mode
+**Why subscene?** Physics Shape must be baked to work with ECS physics, while standard colliders work for MonoBehaviour player.
 
-**Player (v0.3.0+):**
-- **Player falls through ground**: Ground MUST be in a subscene with Physics Shape component
-- **Player doesn't move**: Ensure PlayerController and CharacterController components are added
-- **No input response**: Check PlayerController is enabled
+### 3. Create Player
 
-**NPCs (v0.2.0+):**
-- **NPCs fall through ground**: Ground must be in a subscene with Physics Shape component
-- **NPCs don't follow player**: Ensure player has PlayerMarker component
-- **NPCs don't move**: NPCs must be in a subscene with CharacterAuthoring + NPCAuthoring
+1. Create GameObject named "Player"
+2. Add components:
+   - `CharacterController` (Unity built-in)
+   - `PlayerController` (handles movement)
+   - `PlayerMarker` (creates ECS entity for NPC detection)
+3. Optional: Add visual mesh (Capsule)
 
-**Hybrid Architecture:**
+**See full guide:** `Assets/_Game/Instructives/Playable_Character.md`
+
+### 4. Create NPCs
+
+1. Create GameObject in the subscene
+2. Add components:
+   - `CharacterAuthoring` (ECS movement)
+   - `NPCAuthoring` (AI behavior)
+3. Configure patrol radius and follow settings in Inspector
+
+**See full guide:** `Assets/_Game/Instructives/NPC_AI.md`
+
+## 🎮 Controls
+
+| Action           | Keyboard   | Gamepad                |
+| ---------------- | ---------- | ---------------------- |
+| Move             | WASD       | Left Stick             |
+| Jump             | Space      | South Button (A/X)     |
+| Sprint           | Left Shift | Left Stick Press       |
+| Crouch :warning: | Left Ctrl  | East Button (B/Circle) |
+
+:warning: Not yet implemented
+
+## 📁 Project Structure
+
+```
+Assets/_Game/
+├── Scenes/                  # Main scenes and subscenes
+├── Scripts/
+│   ├── Player/             # MonoBehaviour player components
+│   │   ├── PlayerController.cs
+│   │   └── PlayerMarker.cs
+│   ├── Components/         # ECS components
+│   │   ├── Character/      # Movement components
+│   │   ├── Input/          # Input data components
+│   │   ├── AI/             # NPC AI components
+│   │   └── Tags/           # PlayerTag, NPCTag
+│   ├── Systems/            # ECS systems
+│   │   ├── Simulation/     # NPCAISystem, CharacterMovementSystem
+│   │   └── Initialization/ # CharacterInputSystem
+│   ├── Authoring/          # Baking components
+│   │   ├── CharacterAuthoring.cs  # NPC entities
+│   │   └── NPCAuthoring.cs        # NPC AI configuration
+│   └── Character/          # Character processor (ECS movement logic)
+└── Instructives/           # Documentation
+    ├── Playable_Character.md
+    └── NPC_AI.md
+```
+
+## 🏗️ Architecture Highlights
+
+### Hybrid Approach
+
+```
+Player (MonoBehaviour):
+PlayerController → CharacterController → Standard Physics
+
+NPCs (ECS):
+NPCAISystem → CharacterInputData → CharacterMovementSystem → ECS Physics
+
+Bridge:
+PlayerMarker → Creates ECS entity with PlayerTag → NPCs query for player
+```
+
+### Why Hybrid?
+
+- **Player**: One character, needs frequent changes, animations, UI integration → MonoBehaviour wins
+- **NPCs**: Many entities, performance-critical, data-oriented → ECS wins
+- **Best of both worlds**: Use the right tool for each job
+
+## 📖 Documentation
+
+- **[Playable_Character.md](Assets/_Game/Instructives/Playable_Character.md)**: Complete player setup guide
+- **[NPC_AI.md](Assets/_Game/Instructives/NPC_AI.md)**: NPC AI behavioral system guide
+- **[CHANGELOG.md](CHANGELOG.md)**: Detailed version history
+
+## 🔧 Troubleshooting
+
+### Player Issues
+- **Falls through ground**: Ground must be in subscene with Physics Shape component
+- **No movement**: Ensure PlayerController and CharacterController are added
+- **No input**: Check PlayerController component is enabled
+
+### NPC Issues
+- **Fall through ground**: Ground must be in subscene with Physics Shape
+- **Don't follow player**: Player needs PlayerMarker component
+- **Don't move**: NPCs must be in subscene with CharacterAuthoring + NPCAuthoring
+
+### General
+- **Physics Shape not found**: Import "Physics Custom" sample from Package Manager
 - **EntityManager errors on exit**: Fixed in v0.3.0+ (PlayerMarker checks World.IsCreated)
-- **NPCs can't detect player**: Player needs PlayerMarker component to create ECS entity with PlayerTag
 
-#### Quick Setup:
-1. Create a GameObject named "Player"
-2. Add `CharacterController` component (Unity built-in)
-- **Character falls through ground**: Add a plane with Physics Shape component to the SubScene
-- **No entities visible**: Check the Entities Hierarchy window while in Play Mode
+## 🎓 Learning Resources
+
+This project demonstrates:
+- ✅ Unity 6 ECS hybrid architecture
+- ✅ MonoBehaviour and ECS coexistence
+- ✅ Dynamic entity queries (PlayerTag detection)
+- ✅ Subscene baking workflow
+- ✅ Burst compilation and job scheduling
+- ✅ Unity Input System integration
+- ✅ Kinematic Character Controller usage
+
+## 📝 Version
+
+**Current Version:** 0.3.0
+
+See [CHANGELOG.md](CHANGELOG.md) for detailed version history.
+
+## 🤝 Contributing
+
+This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+---
+
+**Built with Unity 6 ECS** | **Hybrid MonoBehaviour + ECS Architecture**
