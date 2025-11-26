@@ -23,9 +23,13 @@ namespace Game.Authoring
         [Min(0.1f)]
         public float patrolTargetReachedDistance = 1f;
 
-        [Tooltip("Time to wait at each patrol point (in seconds)")]
+        [Tooltip("Minimum time to wait at each patrol point (in seconds)")]
         [Min(0f)]
-        public float waitTimeAtPatrolPoint = 2f;
+        public float minWaitTimeAtPatrolPoint = 1f;
+
+        [Tooltip("Maximum time to wait at each patrol point (in seconds)")]
+        [Min(0f)]
+        public float maxWaitTimeAtPatrolPoint = 3f;
 
         [Header("Follow Settings")]
         [Tooltip("Target to follow (typically the player GameObject)")]
@@ -42,6 +46,10 @@ namespace Game.Authoring
         [Tooltip("Maximum distance from patrol center before NPC returns")]
         [Min(1f)]
         public float maxDistanceFromPatrolCenter = 25f;
+
+        [Tooltip("Maximum time (in seconds) NPC can follow target before giving up")]
+        [Min(1f)]
+        public float maxFollowTime = 20f;
 
         [Header("Visualization")]
         [Tooltip("Show debug gizmos in scene view")]
@@ -107,14 +115,42 @@ namespace Game.Authoring
                 float3 offsetAsFloat3 = new float3(authoring.patrolCenterOffset.x, authoring.patrolCenterOffset.y, authoring.patrolCenterOffset.z);
                 float3 positionAsFloat3 = new float3(authoring.transform.position.x, authoring.transform.position.y, authoring.transform.position.z);
                 float3 patrolCenter = positionAsFloat3 + offsetAsFloat3;
+                
+                // Generate initial random patrol target to avoid synchronized movement
+                uint seed = (uint)(UnityEngine.Random.value * uint.MaxValue);
+                Unity.Mathematics.Random random = new Unity.Mathematics.Random(seed == 0 ? 1 : seed);
+                float angle = random.NextFloat(0f, math.PI * 2f);
+                float distance = random.NextFloat(0f, authoring.patrolRadius);
+                
+                // Calculate X/Z position
+                float targetX = patrolCenter.x + math.cos(angle) * distance;
+                float targetZ = patrolCenter.z + math.sin(angle) * distance;
+                
+                // Sample terrain height at this X/Z position (edit-time)
+                float targetY = patrolCenter.y; // Default height
+                Terrain terrain = Terrain.activeTerrain;
+                if (terrain != null)
+                {
+                    Vector3 worldPos = new Vector3(targetX, 0, targetZ);
+                    targetY = terrain.SampleHeight(worldPos);
+                }
+                
+                float3 initialPatrolTarget = new float3(targetX, targetY, targetZ);
+                
+                // Randomize initial wait time
+                float initialWaitTime = random.NextFloat(authoring.minWaitTimeAtPatrolPoint, authoring.maxWaitTimeAtPatrolPoint);
+                
                 AddComponent(entity, new NPCPatrolData
                 {
                     PatrolCenter = patrolCenter,
                     PatrolRadius = authoring.patrolRadius,
-                    CurrentPatrolTarget = patrolCenter, // Start at center
+                    CurrentPatrolTarget = initialPatrolTarget, // Randomized starting position
                     PatrolTargetReachedDistance = authoring.patrolTargetReachedDistance,
-                    WaitTimeAtPatrolPoint = authoring.waitTimeAtPatrolPoint,
-                    CurrentWaitTime = 0f
+                    MinWaitTimeAtPatrolPoint = authoring.minWaitTimeAtPatrolPoint,
+                    MaxWaitTimeAtPatrolPoint = authoring.maxWaitTimeAtPatrolPoint,
+                    WaitTimeAtPatrolPoint = initialWaitTime, // Randomized initial wait time
+                    CurrentWaitTime = 0f,
+                    TimeSpentOnCurrentPatrolTarget = 0f
                 });
 
                 // Add target data
@@ -129,14 +165,16 @@ namespace Game.Authoring
                     TargetEntity = targetEntity,
                     FollowDetectionRange = authoring.followDetectionRange,
                     FollowDistance = authoring.followDistance,
-                    MaxDistanceFromPatrolCenter = authoring.maxDistanceFromPatrolCenter
+                    MaxDistanceFromPatrolCenter = authoring.maxDistanceFromPatrolCenter,
+                    MaxFollowTime = authoring.maxFollowTime
                 });
 
                 // Add state data (start in patrolling state)
                 AddComponent(entity, new NPCStateData
                 {
                     CurrentState = NPCState.Patrolling,
-                    TimeInCurrentState = 0f
+                    TimeInCurrentState = 0f,
+                    ReturnPosition = patrolCenter // Initialize to patrol center
                 });
 
                 // Note: CharacterInputData is already added by CharacterAuthoring

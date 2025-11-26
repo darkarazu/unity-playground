@@ -27,5 +27,11 @@ namespace Game.Components
         /// If the NPC is following and exceeds this distance from patrol center, it returns.
         /// </summary>
         public float MaxDistanceFromPatrolCenter;
+
+        /// <summary>
+        /// Maximum time (in seconds) the NPC can spend following a target before giving up.
+        /// Prevents NPCs from getting stuck trying to follow unreachable targets.
+        /// </summary>
+        public float MaxFollowTime;
     }
 }

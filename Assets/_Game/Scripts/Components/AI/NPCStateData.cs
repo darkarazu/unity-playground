@@ -1,4 +1,5 @@
 using Unity.Entities;
+using Unity.Mathematics;
 
 namespace Game.Components
 {
@@ -34,8 +35,14 @@ namespace Game.Components
         public NPCState CurrentState;
 
         /// <summary>
-        /// Time spent in current state (for debugging/state duration tracking).
+        /// Time spent in the current state (in seconds).
         /// </summary>
         public float TimeInCurrentState;
+
+        /// <summary>
+        /// Position to return to when giving up on following the player.
+        /// Set to NPC's position when starting to follow.
+        /// </summary>
+        public float3 ReturnPosition;
     }
 }

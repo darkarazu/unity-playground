@@ -2,7 +2,9 @@ using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
+using Unity.Physics;
 using Game.Components;
+using System.Diagnostics;
 
 namespace Game.Systems
 {
@@ -20,7 +22,7 @@ namespace Game.Systems
             state.RequireForUpdate<NPCTag>();
         }
 
-        [BurstCompile]
+        [BurstCompile(Debug = true)]
         public void OnUpdate(ref SystemState state)
         {
             float deltaTime = SystemAPI.Time.DeltaTime;
@@ -61,7 +63,6 @@ namespace Game.Systems
 
                 // Calculate distance from patrol center
                 float distanceFromPatrolCenter = math.distance(npcPosition, patrol.PatrolCenter);
-
                 // State machine logic
                 switch (aiState.CurrentState)
                 {
@@ -91,6 +92,8 @@ namespace Game.Systems
             // Check if should start following target
             if (hasValidTarget && distanceToTarget <= target.FollowDetectionRange)
             {
+                // Store current position to return to later
+                state.ReturnPosition = npcPosition;
                 TransitionToState(ref state, NPCState.Following);
                 return;
             }
@@ -100,14 +103,21 @@ namespace Game.Systems
 
             if (distanceToPatrolTarget <= patrol.PatrolTargetReachedDistance)
             {
-                // Wait at patrol point
+                // Reached patrol point - wait here
                 patrol.CurrentWaitTime += deltaTime;
+                patrol.TimeSpentOnCurrentPatrolTarget = 0f; // Reset stuck timer
 
                 if (patrol.CurrentWaitTime >= patrol.WaitTimeAtPatrolPoint)
                 {
                     // Select new patrol target
                     patrol.CurrentPatrolTarget = GenerateRandomPatrolPoint(ref systemState, patrol.PatrolCenter, patrol.PatrolRadius);
+                    
+                    // Randomize wait time for next patrol point
+                    uint seed = (uint)(systemState.WorldUnmanaged.Time.ElapsedTime * 1000000);
+                    Random random = new Random(seed);
+                    patrol.WaitTimeAtPatrolPoint = random.NextFloat(patrol.MinWaitTimeAtPatrolPoint, patrol.MaxWaitTimeAtPatrolPoint);
                     patrol.CurrentWaitTime = 0f;
+                    patrol.TimeSpentOnCurrentPatrolTarget = 0f;
                 }
 
                 // Stop moving while waiting
@@ -115,6 +125,25 @@ namespace Game.Systems
             }
             else
             {
+                // Moving toward patrol target - track time spent
+                patrol.TimeSpentOnCurrentPatrolTarget += deltaTime;
+                
+                // TIMEOUT CHECK: If stuck trying to reach point for too long, get new point
+                const float maxPatrolTargetTimeout = 15f; // 15 seconds timeout
+                if (patrol.TimeSpentOnCurrentPatrolTarget > maxPatrolTargetTimeout)
+                {
+                    // NPC is stuck - generate new patrol point
+                    patrol.CurrentPatrolTarget = GenerateRandomPatrolPoint(ref systemState, patrol.PatrolCenter, patrol.PatrolRadius);
+                    
+                    // Randomize wait time for next patrol point
+                    uint seed = (uint)(systemState.WorldUnmanaged.Time.ElapsedTime * 1000000);
+                    Random random = new Random(seed);
+                    patrol.WaitTimeAtPatrolPoint = random.NextFloat(patrol.MinWaitTimeAtPatrolPoint, patrol.MaxWaitTimeAtPatrolPoint);
+                    
+                    patrol.TimeSpentOnCurrentPatrolTarget = 0f;
+                    patrol.CurrentWaitTime = 0f;
+                }
+                
                 // Move toward patrol target
                 float3 direction = math.normalize(patrol.CurrentPatrolTarget - npcPosition);
                 input.MoveInput = new float2(direction.x, direction.z);
@@ -132,6 +161,13 @@ namespace Game.Systems
                                     bool hasValidTarget, float distanceToTarget, in NPCTargetData target,
                                     float distanceFromPatrolCenter)
         {
+            // TIMEOUT CHECK: If following for too long (stuck trying to reach unreachable target), give up
+            if (state.TimeInCurrentState > target.MaxFollowTime)
+            {
+                TransitionToState(ref state, NPCState.Returning);
+                return;
+            }
+            
             // Check if should return to patrol (too far from patrol center or target lost)
             if (!hasValidTarget || 
                 distanceFromPatrolCenter > target.MaxDistanceFromPatrolCenter ||
@@ -164,20 +200,28 @@ namespace Game.Systems
         private void HandleReturning(ref SystemState systemState, ref CharacterInputData input, ref NPCPatrolData patrol,
                                     ref NPCStateData state, float3 npcPosition)
         {
-            float distanceToPatrolCenter = math.distance(npcPosition, patrol.PatrolCenter);
-
-            // Check if back at patrol area
-            if (distanceToPatrolCenter <= patrol.PatrolRadius)
+            float distanceToReturnPoint = math.distance(npcPosition, state.ReturnPosition);
+            
+            // Check if close to return position (where NPC was when it started following)
+            const float arrivedThreshold = 2f; // Consider arrived when within 2 units
+            if (distanceToReturnPoint <= arrivedThreshold)
             {
-                // Generate new patrol target and switch to patrolling
+                // Reached return position - generate new patrol target and switch to patrolling
                 patrol.CurrentPatrolTarget = GenerateRandomPatrolPoint(ref systemState, patrol.PatrolCenter, patrol.PatrolRadius);
+                
+                // Randomize wait time for next patrol point
+                uint seed = (uint)(systemState.WorldUnmanaged.Time.ElapsedTime * 1000000);
+                Random random = new Random(seed);
+                patrol.WaitTimeAtPatrolPoint = random.NextFloat(patrol.MinWaitTimeAtPatrolPoint, patrol.MaxWaitTimeAtPatrolPoint);
+                
                 patrol.CurrentWaitTime = 0f;
+                patrol.TimeSpentOnCurrentPatrolTarget = 0f;
                 TransitionToState(ref state, NPCState.Patrolling);
                 return;
             }
 
-            // Move toward patrol center
-            float3 direction = math.normalize(patrol.PatrolCenter - npcPosition);
+            // Move toward return position
+            float3 direction = math.normalize(state.ReturnPosition - npcPosition);
             input.MoveInput = new float2(direction.x, direction.z);
             input.SprintPressed = true; // Sprint when returning
 
@@ -197,7 +241,6 @@ namespace Game.Systems
         private float3 GenerateRandomPatrolPoint(ref SystemState state, float3 center, float radius)
         {
             // Generate random point within patrol radius
-            // Using a simple random angle and distance
             uint seed = (uint)(state.WorldUnmanaged.Time.ElapsedTime * 1000000);
             Random random = new Random(seed);
 
@@ -207,7 +250,35 @@ namespace Game.Systems
             float x = center.x + math.cos(angle) * distance;
             float z = center.z + math.sin(angle) * distance;
 
-            return new float3(x, center.y, z); // Keep same Y level
+            // Use raycast to find terrain height at this X/Z position
+            // Start high above to ensure we're above any terrain
+            float3 rayStart = new float3(x, center.y + 100f, z);
+            float3 rayEnd = new float3(x, center.y - 100f, z); // Cast far down
+            
+            var physicsWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>().PhysicsWorld;
+            
+            // Create collision filter that collides with everything (including terrain)
+            var raycastInput = new RaycastInput
+            {
+                Start = rayStart,
+                End = rayEnd,
+                Filter = new CollisionFilter
+                {
+                    BelongsTo = ~0u,      // Belongs to all layers
+                    CollidesWith = ~0u,   // Collides with all layers
+                    GroupIndex = 0
+                }
+            };
+            
+            float yHeight = center.y; // Default to center height if no hit
+            
+            if (physicsWorld.CastRay(raycastInput, out RaycastHit hit))
+            {
+                // Use the hit point's Y coordinate (terrain surface) + small offset
+                yHeight = hit.Position.y + 0.1f; // Small offset to ensure NPC is above ground
+            }
+
+            return new float3(x, yHeight, z);
         }
     }
 }

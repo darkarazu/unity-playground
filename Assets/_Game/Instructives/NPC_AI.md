@@ -38,7 +38,9 @@ In the `NPCAuthoring` component, you'll see several configuration sections:
 - **Patrol Center Offset**: Offset from the NPC's spawn position for patrol center (usually `0, 0, 0`)
 - **Patrol Radius**: How far the NPC will roam from the patrol center (default: 10)
 - **Patrol Target Reached Distance**: How close NPC needs to get to patrol point (default: 1)
-- **Wait Time At Patrol Point**: Seconds to pause at each patrol point (default: 2)
+- **Min Wait Time At Patrol Point**: Minimum seconds to pause at each patrol point (default: 1)
+- **Max Wait Time At Patrol Point**: Maximum seconds to pause at each patrol point (default: 3)
+  - Wait time is randomized between min and max for each patrol point
 
 #### **Follow Settings**
 - **Target To Follow**: *(Optional - mainly for gizmo visualization)*
@@ -47,6 +49,9 @@ In the `NPCAuthoring` component, you'll see several configuration sections:
 - **Follow Detection Range**: Distance at which NPC detects and starts following (default: 15)
 - **Follow Distance**: How close NPC gets to target before stopping (default: 3)
 - **Max Distance From Patrol Center**: How far NPC will chase before returning (default: 25)
+- **Max Follow Time**: Maximum seconds NPC can follow before giving up (default: 20)
+  - Prevents NPCs from endlessly chasing unreachable targets
+  - Upon giving up, NPC returns to where it was when it started following
 
 #### **Visualization**
 - **Show Debug Gizmos**: Enable to see patrol area, detection range, and distances in Scene view
@@ -162,7 +167,24 @@ NPCs operate in three states:
 ### **1. Patrolling** (Default)
 - Picks random points within patrol radius
 - Walks to each point
-- Waits at patrol points
+- Waits at patrol points (randomized duration between min and max)
+- Checks for player in detection range
+
+### **2. Following**
+- Detected player within range
+- Sprints towards player
+- Stops at follow distance to maintain spacing
+- Switches to Returning if:
+  - Player goes too far from patrol center
+  - Player moves out of detection range
+  - Following for longer than max follow time (timeout for unreachable targets)
+
+### **3. Returning**
+- Returns to the position where NPC started following the player
+- Ignores player completely during return (no re-following)
+- Sprints back to origin position
+- Switches to Patrolling when close to return position (within 2 units)
+- Resumes normal patrol behavior
 - **Transitions to Following:** When target enters detection range
 
 ### **2. Following**

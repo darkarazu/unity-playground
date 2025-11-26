@@ -30,7 +30,17 @@ namespace Game.Components
         public float PatrolTargetReachedDistance;
 
         /// <summary>
-        /// Time to wait at each patrol point before moving to next (in seconds).
+        /// Minimum time to wait at each patrol point (in seconds).
+        /// </summary>
+        public float MinWaitTimeAtPatrolPoint;
+
+        /// <summary>
+        /// Maximum time to wait at each patrol point (in seconds).
+        /// </summary>
+        public float MaxWaitTimeAtPatrolPoint;
+
+        /// <summary>
+        /// Current wait time target (randomized between min and max).
         /// </summary>
         public float WaitTimeAtPatrolPoint;
 
@@ -38,5 +48,11 @@ namespace Game.Components
         /// Current wait timer.
         /// </summary>
         public float CurrentWaitTime;
+
+        /// <summary>
+        /// Time spent trying to reach the current patrol target (in seconds).
+        /// Used to detect stuck NPCs and generate new target if timeout exceeded.
+        /// </summary>
+        public float TimeSpentOnCurrentPatrolTarget;
     }
 }

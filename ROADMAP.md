@@ -1,6 +1,44 @@
-# Open World RPG Development Roadmap
+# Open World Turn Based RPG Development Roadmap
 
 This roadmap outlines the typical mechanics found in open-world RPG games, ordered from easiest to most difficult to implement in our Unity 6 ECS Hybrid project.
+
+> **Current Project Status**: We have a working hybrid architecture with MonoBehaviour Player, ECS NPCs, terrain support, camera system, and basic AI patrol/follow mechanics.
+
+---
+
+## 🟢 Phase 1: Foundation Systems (Easy)
+
+### 1. Basic Player Stats System
+**Difficulty**: ⭐ Easy  
+**Description**: Simple data structure for player health, stamina, and mana.  
+**Why Easy**: Just data components, no complex logic. Can use ScriptableObjects or simple MonoBehaviour fields.  
+**Implementation**: Create a `PlayerStats` component with health/stamina/mana values and UI bars.
+
+### 2. Improved NPC Behaviors
+**Difficulty**: ⭐ Easy to ⭐⭐ Medium  
+**Description**: Expand NPC AI with idle animations, looking at player, basic reactions.  
+**Why Easy**: Builds on existing `NPCAISystem`. Mostly state machine additions.  
+**Implementation**: Add more states to `NPCStateData` (Idle, Alert, Flee) and transition logic.
+
+### 3. Day/Night Cycle
+**Difficulty**: ⭐⭐ Easy-Medium  
+**Description**: Dynamic lighting with time progression affecting world brightness.  
+**Why Easy**: Unity's Directional Light rotation + skybox changes. Simple time counter.  
+**Implementation**: Rotate sun/moon lights based on time value, lerp ambient colors.
+
+### 4. Audio System (Footsteps, Ambient)
+**Difficulty**: ⭐⭐ Easy-Medium  
+**Description**: Footstep sounds, ambient music, environmental audio.  
+**Why Easy**: Unity Audio Source + simple trigger logic. No complex 3D audio needed yet.  
+**Implementation**: Add Audio Sources to Player/NPCs, play clips on movement events.
+
+### 5. Basic Loot Drops
+**Difficulty**: ⭐⭐ Medium  
+**Description**: NPCs drop items when defeated (future combat system dependency).  
+**Why Medium**: Requires item data structure and spawn logic, but no complex inventory yet.  
+# Open World Turn Based RPG Development Roadmap
+
+This roadmap outlines the typical mechanics found in open-world Turn Based RPG games, ordered from easiest to most difficult to implement in our Unity 6 ECS Hybrid project.
 
 > **Current Project Status**: We have a working hybrid architecture with MonoBehaviour Player, ECS NPCs, terrain support, camera system, and basic AI patrol/follow mechanics.
 
@@ -42,43 +80,43 @@ This roadmap outlines the typical mechanics found in open-world RPG games, order
 
 ## 🟡 Phase 2: Core Gameplay Systems (Medium)
 
-### 6. Simple Combat System
-**Difficulty**: ⭐⭐⭐ Medium  
-**Description**: Melee attack, damage calculation, hit detection.  
-**Why Medium**: Animation integration, hitbox detection, damage messaging between entities.  
-**Implementation**: Animation events trigger damage raycasts, health reduction on hits.  
-**ECS Consideration**: Damage can be ECS events, allowing efficient NPC-vs-NPC combat.
-
-### 7. Inventory System
+### 6. Inventory System
 **Difficulty**: ⭐⭐⭐ Medium  
 **Description**: Item collection, storage, equipment slots, weight limits.  
 **Why Medium**: UI complexity, data persistence, item database management.  
 **Implementation**: List-based inventory with UI grid, drag-and-drop functionality.  
 **Tech**: Likely MonoBehaviour for Player, separate ECS component for NPC loot tables.
 
-### 8. Quest System (Basic)
+### 7. Quest System (Basic)
 **Difficulty**: ⭐⭐⭐ Medium  
 **Description**: Simple fetch/kill quests with objectives and rewards.  
 **Why Medium**: Quest state tracking, UI updates, completion detection.  
 **Implementation**: ScriptableObject quest definitions, quest manager tracking progress.
 
-### 9. Experience & Leveling System
+### 8. Experience & Leveling System
 **Difficulty**: ⭐⭐⭐ Medium  
 **Description**: XP gain from kills/quests, level-up with stat increases.  
 **Why Medium**: Math for XP curves, UI for level-up notification, stat scaling.  
 **Implementation**: XP accumulator, threshold-based leveling, stat boost application.
 
-### 10. Fast Travel System
+### 9. Fast Travel System
 **Difficulty**: ⭐⭐⭐ Medium  
 **Description**: Teleport between discovered waypoints on the terrain.  
 **Why Medium**: Marker discovery logic, UI map integration, position teleportation.  
 **Implementation**: Array of discovered positions, UI menu, instant `transform.position` change.
 
-### 11. NPC Dialogue System
+### 10. NPC Dialogue System
 **Difficulty**: ⭐⭐⭐⭐ Medium-Hard  
 **Description**: Branching conversations with dialogue trees and choices.  
 **Why Medium-Hard**: Tree data structure, UI with choices, parsing dialogue scripts.  
 **Implementation**: Graph-based dialogue nodes (Yarn Spinner or custom), UI dialogue box.
+
+### 11. Turn-Based Combat System
+**Difficulty**: ⭐⭐⭐⭐ Medium-Hard  
+**Description**: Tactical combat with initiative order, action selection, and cinematic camera.  
+**Why Medium-Hard**: Requires robust state machine (Turn Manager), UI for action selection, and "waiting" logic for all entities.  
+**Implementation**: Global `TurnManager` system sorts initiative. UI sends commands to ECS components (`PerformAttack`).  
+**ECS Consideration**: Excellent fit for ECS. Systems only process the entity with the `ActiveTurn` tag.
 
 ---
 
@@ -163,8 +201,8 @@ This roadmap outlines the typical mechanics found in open-world RPG games, order
 ## 📊 Implementation Strategy Recommendations
 
 ### Immediate Next Steps (Based on Current State)
-1. **Combat System** - Extends existing character controller, enables gameplay loop
-2. **Inventory System** - Foundation for equipment and loot
+1. **Inventory System** - Foundation for items needed in combat
+2. **Turn-Based Combat** - Core tactical loop, requires UI and State Machine
 3. **Basic Quests** - Provides player goals and direction
 
 ### ECS vs MonoBehaviour Decision Guide
@@ -189,7 +227,7 @@ This roadmap outlines the typical mechanics found in open-world RPG games, order
 
 ### Short Term (1-3 Months)
 - ✅ Phase 1 complete (Foundation)
-- ⚡ Start Phase 2: Combat + Inventory
+- ⚡ Start Phase 2: Inventory + Turn-Based Combat
 
 ### Medium Term (3-6 Months)
 - Complete Phase 2 (Core Gameplay)
@@ -203,14 +241,19 @@ This roadmap outlines the typical mechanics found in open-world RPG games, order
 
 ## 📚 Research References
 
-This roadmap is based on common mechanics from successful open-world RPGs:
+### Turn-Based Combat Inspiration
+- **Baldur's Gate 3** - Tactical depth, environmental interaction
+- **Final Fantasy X** - Conditional turn-based battle (CTB)
+- **Persona 5** - Stylish UI, weakness exploitation systems
+- **Pokemon** - Simple but deep rock-paper-scissors mechanics
+
+### General RPG References
 - **The Elder Scrolls V: Skyrim** - Open world, skill-based progression
 - **The Witcher 3** - Quest design, player choices, dynamic world
-- **Elden Ring** - Exploration rewards, challenging combat
-- **Zelda: Breath of the Wild** - Environmental interaction, physics-based exploration
-- **Horizon Forbidden West** - Quest variety, crafting systems
+- **Elden Ring** - Exploration rewards
+- **Zelda: Breath of the Wild** - Environmental interaction
 
 ---
 
-**Last Updated**: 2025-11-26  
-**Project Version**: 0.4.0 (Terrain + Hybrid Physics)
+**Last Updated**: 2025-11-27  
+**Project Version**: 0.6.0 (Controller Support + NPC AI Improvements)

@@ -122,6 +122,13 @@ namespace Game.Player
             isSprinting = sprintAction.IsPressed();
             isCrouching = crouchAction.IsPressed();
 
+            // Prevent sprinting while moving backwards
+            // Check if player is moving backwards (negative Y input)
+            if (isSprinting && input.y < 0)
+            {
+                isSprinting = false;
+            }
+
             // Calculate speed based on state
             float currentSpeed = walkSpeed;
             if (isSprinting && !isCrouching)

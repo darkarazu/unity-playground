@@ -17,24 +17,33 @@ This project showcases best practices for using Unity's Entity Component System 
 - Third-person character movement using Unity's built-in `CharacterController`
 - Strafe movement: W/S forward/back, A/D left/right
 - LMB: Orbit camera (view only), RMB: Rotate player with camera
-- Input handling: jumping, sprinting, crouching
-- Supports both keyboard/mouse and gamepad controls
+- Input handling: jumping, sprinting (forward/strafe only), crouching
+- **Full controller support**: PlayStation, Xbox, and Nintendo Switch gamepads
+  - Left Stick → Movement, Right Stick → Camera orbit
+  - D-Pad → Progressive zoom in/out
+  - See `Controller.md` for complete button mappings
 - Easy to extend with animations, UI, and Unity features
 
 ### NPC AI System (ECS)
-- **Patrol behavior**: NPCs roam within configurable areas
-- **Follow behavior**: NPCs detect and chase the player
-- **Return behavior**: NPCs return to patrol area when too far from center
+- **Intelligent patrol behavior**: NPCs roam within configurable areas
+  - Randomized starting positions and patrol points
+  - Varied wait times at patrol points (min/max range)
+  - Terrain-aware pathfinding (raycasts to find surface height)
+- **Smart follow behavior**: NPCs detect and chase the player
+  - Follow timeout system (prevents endless chasing of unreachable targets)
+  - Return-to-origin: NPCs return to where they started following
+- **Proper state machine**: NPCs ignore player completely while returning
 - Fully Burst-compiled and job-scheduled for performance
 - Visual debug gizmos for tuning AI parameters
 
 ### Camera System (Cinemachine)
 - **Professional 3rd person camera** using Cinemachine 3.x
-- **LMB + Mouse**: Orbit camera around player (view only)
+- **LMB + Mouse / Right Stick**: Orbit camera around player
 - **RMB + Mouse**: Smoothly rotate player to face camera
-- **Scroll Wheel**: Proportional zoom (maintains orbital shape)
+- **Scroll Wheel / D-Pad**: Proportional zoom (maintains orbital shape)
 - **Dynamic FOV**: Widen field of view when sprinting
-- Configurable sensitivity, transitions, and camera distance
+- **Rotation catch-up**: Player smoothly rotates to camera direction after input
+- Configurable sensitivity (separate for mouse and gamepad), transitions, and camera distance
 
 ### Hybrid Architecture
 - **PlayerMarker** component bridges MonoBehaviour player with ECS NPCs
@@ -65,25 +74,31 @@ This project showcases best practices for using Unity's Entity Component System 
 3. Go to **Samples** tab
 4. Click **Import** next to **"Physics Custom"**
 
-### 2. Set Up Ground
+### 2. Set Up Ground (Plane or Terrain)
 
-Critical for hybrid architecture:
+You can use either a simple Plane or a full Unity Terrain:
 
+**Option A: Simple Plane (Prototyping)**
 1. Create a subscene (Right-click Hierarchy → New Sub Scene)
 2. Add a Plane inside the subscene
 3. Add **Physics Shape** component (Shape Type: Box)
 4. Close subscene to trigger baking
 
-**Why subscene?** Physics Shape must be baked to work with ECS physics, while standard colliders work for MonoBehaviour player.
+**Option B: Unity Terrain (Production)**
+1. Create a Terrain in the **Main Scene** (NOT subscene)
+2. Add **Terrain Collider** component
+3. Add **Terrain Physics Runtime** component
+   - This automatically generates ECS colliders at runtime
+   - Works for both Player (MonoBehaviour) and NPCs (ECS)
+
+**See full guide:** **[Terrain.md](Assets/_Game/Instructives/Terrain.md)**
 
 ### 3. Setup Camera System (NEW!)
 
 1. Install **Cinemachine** package (Window → Package Manager)
 2. Select **Main Camera** → Add **Cinemachine Brain** component
 3. Create **FreeLook Camera** (GameObject → Cinemachine → FreeLook Camera)
-4. Configure camera (see `Camera.md` for detailed steps)
-
-**See full guide:** `Assets/_Game/Instructives/Camera.md`
+4. Configure camera (see **[Camera.md](Assets/_Game/Instructives/Camera.md)** for detailed steps)
 
 ### 4. Create Player
 
@@ -97,7 +112,7 @@ Critical for hybrid architecture:
    - Drag FreeLook Camera to **Free Look Camera** field
 4. Optional: Add visual mesh (Capsule)
 
-**See full guide:** `Assets/_Game/Instructives/Playable_Character.md` and `Camera.md`
+**See full guide:** **[Playable_Character.md](Assets/_Game/Instructives/Playable_Character.md)** and **[Camera.md](Assets/_Game/Instructives/Camera.md)**
 
 ### 5. Create NPCs
 
@@ -107,7 +122,7 @@ Critical for hybrid architecture:
    - `NPCAuthoring` (AI behavior)
 3. Configure patrol radius and follow settings in Inspector
 
-**See full guide:** `Assets/_Game/Instructives/NPC_AI.md`
+**See full guide:** **[NPC_AI.md](Assets/_Game/Instructives/NPC_AI.md)**
 
 ## 🎮 Controls
 
@@ -119,10 +134,7 @@ Critical for hybrid architecture:
 | **Zoom Camera**   | Scroll Wheel            | Zoom in/out                      |
 | **Jump**          | Space / Button South    | Jump                             |
 | **Sprint**        | Left Shift / L3         | Run faster                       |
-| **Crouch** ⚠️      | Left Ctrl / Button East | Crouch (not yet implemented)     |
-
-⚠️ = Feature marked for future implementation
-
+| **Crouch**        | Left Ctrl / Button East | Crouch (not yet implemented)     |
 
 ## 📁 Project Structure
 
@@ -132,6 +144,7 @@ Assets/_Game/
 ├── Scripts/
 │   ├── Player/             # MonoBehaviour player components
 │   │   ├── PlayerController.cs
+│   │   ├── CameraController.cs    # Camera logic
 │   │   └── PlayerMarker.cs
 │   ├── Components/         # ECS components
 │   │   ├── Character/      # Movement components
@@ -144,10 +157,15 @@ Assets/_Game/
 │   ├── Authoring/          # Baking components
 │   │   ├── CharacterAuthoring.cs  # NPC entities
 │   │   └── NPCAuthoring.cs        # NPC AI configuration
+│   ├── Hybrid/             # Hybrid ECS/MonoBehaviour bridges
+│   │   └── TerrainPhysicsRuntime.cs # Runtime terrain collider generation
 │   └── Character/          # Character processor (ECS movement logic)
 └── Instructives/           # Documentation
     ├── Playable_Character.md
-    └── NPC_AI.md
+    ├── NPC_AI.md
+    ├── Camera.md
+    ├── Controller.md
+    └── Terrain.md
 ```
 
 ## 🏗️ Architecture Highlights
@@ -175,6 +193,9 @@ PlayerMarker → Creates ECS entity with PlayerTag → NPCs query for player
 
 - **[Playable_Character.md](Assets/_Game/Instructives/Playable_Character.md)**: Complete player setup guide
 - **[NPC_AI.md](Assets/_Game/Instructives/NPC_AI.md)**: NPC AI behavioral system guide
+- **[Camera.md](Assets/_Game/Instructives/Camera.md)**: Camera system setup and configuration
+- **[Controller.md](Assets/_Game/Instructives/Controller.md)**: Controller input mappings and setup
+- **[Terrain.md](Assets/_Game/Instructives/Terrain.md)**: Terrain physics setup guide
 - **[CHANGELOG.md](CHANGELOG.md)**: Detailed version history
 
 ## 🔧 Troubleshooting
@@ -202,14 +223,18 @@ This project demonstrates:
 - ✅ Dynamic entity queries (PlayerTag detection)
 - ✅ Subscene baking workflow
 - ✅ Burst compilation and job scheduling
-- ✅ Unity Input System integration
-- ✅ Kinematic Character Controller usage
+- ✅ Unity Input System integration (Gamepad + KBM)
+- ✅ Runtime Terrain Physics generation
 
 ## 📝 Version
 
-**Current Version:** 0.4.0
+**Current Version:** 0.6.0
 
 See [CHANGELOG.md](CHANGELOG.md) for detailed version history.
+
+**Roadmap**
+
+See [ROADMAP.md](ROADMAP.md) for detailed version history.
 
 ## 🤝 Contributing
 

@@ -5,6 +5,52 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2025-11-27
+
+### Controller Support and NPC AI Improvements
+
+#### Added
+- **Full Controller Support**: PlayStation, Xbox, and Nintendo Switch controller support
+  - **Controller.md**: Comprehensive documentation with button mappings for all controllers
+  - **PlayerController.cs**: Gamepad input bindings
+    - Left Stick → Movement
+    - B/Cross/B (South) → Jump
+    - LT/L2/ZL (Left Trigger) → Sprint (forward/strafe only, not backwards)
+    - LB/L1/L (Left Shoulder) → Crouch
+  - **CameraController.cs**: Gamepad camera controls
+    - Right Stick → Camera Orbit (with adjustable sensitivity)
+    - D-Pad Up/Down → Progressive Zoom In/Out
+    - Rotation catch-up system for smooth camera-to-player alignment
+- **NPC AI Enhancements**:
+  - **Randomized Patrol Behavior**:
+    - NPCs start at random positions within patrol radius (no synchronized movement)
+    - Wait times randomized between min/max values (1-3 seconds default)
+    - Patrol points use raycast-based terrain height detection for proper elevation
+  - **Intelligent Following Behavior**:
+    - Follow timeout system (20 seconds default) prevents endless chasing of unreachable targets
+    - Return-to-origin: NPCs return to where they started following, not patrol center
+    - Proper state machine: NPCs completely ignore player while returning
+  - **Stuck Detection**: 15-second timeout generates new patrol point if NPC can't reach current target
+  - **NPCPatrolData**: Added min/max wait time fields and timeout tracking
+  - **NPCTargetData**: Added MaxFollowTime field
+  - **NPCStateData**: Added ReturnPosition field for intelligent return behavior
+
+#### Changed
+- **Player Movement**: Sprinting disabled while walking backwards
+- **NPC Patrol**: Uses terrain surface height instead of fixed Y coordinates
+- **Camera System**: Added separate joystick sensitivity setting (independent from mouse)
+
+#### Fixed
+- **NPC Terrain Collision**: NPCs no longer get stuck on hills or fall through terrain
+- **NPC State Transitions**: Proper state isolation prevents instant re-following after giving up
+- **Camera Orbit Direction**: Fixed right stick X-axis mapping for intuitive left/right movement
+- **D-Pad Zoom**: Fixed Vector2 read error by using separate button actions
+
+#### Technical Notes
+- All controller inputs use Unity's Input System with programmatic action creation
+- Raycast-based terrain sampling ensures NPCs generate reachable patrol points
+- State machine routing naturally handles NPC behavior isolation during state transitions
+
 ## [0.5.0] - 2025-11-26
 
 ### Terrain Support for Hybrid ECS Architecture
