@@ -20,6 +20,9 @@ namespace Game.Player
         [Tooltip("Mouse sensitivity for camera rotation")]
         public float mouseSensitivity = 2f;
 
+        [Tooltip("Joystick sensitivity for camera rotation (controller right stick)")]
+        public float joystickSensitivity = 100f;
+
         [Tooltip("Invert vertical camera axis")]
         public bool invertY = false;
 
@@ -58,6 +61,9 @@ namespace Game.Player
         private InputAction leftMouseButton;
         private InputAction rightMouseButton;
         private InputAction scrollAction;
+        private InputAction rightStickInput;  // Gamepad right stick for camera
+        private InputAction dpadZoomIn;       // Gamepad D-Pad up for zoom in
+        private InputAction dpadZoomOut;      // Gamepad D-Pad down for zoom out
 
         // References
         private PlayerController playerController;
@@ -80,6 +86,11 @@ namespace Game.Player
         // FOV state
         private float currentFOV;
         private float targetFOV;
+        
+        // Rotation catch-up state
+        private bool shouldCatchUpRotation = false;
+        private float rotationCatchUpTimer = 0f;
+        private const float rotationCatchUpDuration = 0.3f; // Time to finish rotation after releasing input
 
         private void Awake()
         {
@@ -102,9 +113,21 @@ namespace Game.Player
             rightMouseButton = new InputAction("RightMouse", InputActionType.Button, "<Mouse>/rightButton");
             rightMouseButton.Enable();
 
-            // Mouse scroll (zoom)
+            // Mouse scroll (zoom) + D-Pad support
             scrollAction = new InputAction("Scroll", InputActionType.Value, "<Mouse>/scroll/y");
             scrollAction.Enable();
+            
+            // Controller: Right Stick for camera orbit (replaces mouse delta when used)
+            // rightStick = Xbox Right Stick, PS R3, Switch Right Stick
+            rightStickInput = new InputAction("RightStick", InputActionType.Value, "<Gamepad>/rightStick");
+            rightStickInput.Enable();
+            
+            // Controller: D-Pad for zoom (separate buttons)
+            dpadZoomIn = new InputAction("DPadZoomIn", InputActionType.Button, "<Gamepad>/dpad/up");
+            dpadZoomIn.Enable();
+            
+            dpadZoomOut = new InputAction("DPadZoomOut", InputActionType.Button, "<Gamepad>/dpad/down");
+            dpadZoomOut.Enable();
         }
 
         private void FindCameraComponents()
@@ -150,6 +173,7 @@ namespace Game.Player
             HandleCameraInput();
             HandleZoom();
             HandleFOV();
+            HandleRotationCatchUp();
         }
 
         private void HandleCameraInput()
@@ -157,15 +181,30 @@ namespace Game.Player
             // Get mouse delta
             Vector2 mouseDelta = mousePosition.ReadValue<Vector2>();
             
+            // Get right stick input for gamepad camera control
+            Vector2 rightStick = rightStickInput.ReadValue<Vector2>();
+            
             bool isLeftMouseHeld = leftMouseButton.IsPressed();
             bool isRightMouseHeld = rightMouseButton.IsPressed();
+            bool isRightStickUsed = rightStick.sqrMagnitude > 0.1f;
 
-            // Only process if either mouse button is held
-            if (isLeftMouseHeld || isRightMouseHeld)
+            // Process if mouse button held OR right stick moved (gamepad)
+            if (isLeftMouseHeld || isRightMouseHeld || isRightStickUsed)
             {
-                // Apply mouse sensitivity
-                float deltaX = mouseDelta.x * mouseSensitivity * 0.01f;
-                float deltaY = mouseDelta.y * mouseSensitivity * 0.01f;
+                float deltaX, deltaY;
+                
+                if (isRightStickUsed)
+                {
+                    // Use joystick sensitivity for controller
+                    deltaX = rightStick.x * joystickSensitivity * Time.deltaTime;
+                    deltaY = rightStick.y * joystickSensitivity * Time.deltaTime;
+                }
+                else
+                {
+                    // Use mouse sensitivity for mouse
+                    deltaX = mouseDelta.x * mouseSensitivity * 0.01f;
+                    deltaY = mouseDelta.y * mouseSensitivity * 0.01f;
+                }
 
                 // Invert Y if needed
                 if (invertY)
@@ -182,10 +221,14 @@ namespace Game.Player
                 orbitalFollow.HorizontalAxis.Value = currentHorizontalAngle;
                 orbitalFollow.VerticalAxis.Value = currentVerticalAngle;
 
-                // If RIGHT mouse button: Rotate player to face camera direction
-                if (isRightMouseHeld)
+                // If RIGHT mouse OR right stick: Rotate player immediately AND prepare catch-up
+                if (isRightMouseHeld || isRightStickUsed)
                 {
                     RotatePlayerToCameraDirection();
+                    
+                    // Enable rotation catch-up for when input is released
+                    shouldCatchUpRotation = true;
+                    rotationCatchUpTimer = rotationCatchUpDuration; // Reset timer
                 }
             }
         }
@@ -205,16 +248,67 @@ namespace Game.Player
             // Apply smooth rotation
             playerController.SetYRotation(newRotation.eulerAngles.y);
         }
+        
+        private void HandleRotationCatchUp()
+        {
+            // Continue rotating player to match camera after RMB/right stick is released
+            if (shouldCatchUpRotation && rotationCatchUpTimer > 0f)
+            {
+                // Check if RMB or right stick is still being used
+                bool isRightMouseHeld = rightMouseButton.IsPressed();
+                Vector2 rightStick = rightStickInput.ReadValue<Vector2>();
+                bool isRightStickUsed = rightStick.sqrMagnitude > 0.1f;
+                
+                // If input resumed, reset timer
+                if (isRightMouseHeld || isRightStickUsed)
+                {
+                    rotationCatchUpTimer = rotationCatchUpDuration;
+                    return;
+                }
+                
+                // Continue rotating toward camera
+                RotatePlayerToCameraDirection();
+                
+                // Countdown timer
+                rotationCatchUpTimer -= Time.deltaTime;
+                
+                // Stop when timer expires
+                if (rotationCatchUpTimer <= 0f)
+                {
+                    shouldCatchUpRotation = false;
+                }
+            }
+        }
 
         private void HandleZoom()
         {
             float scrollValue = scrollAction.ReadValue<float>();
             
-            if (scrollValue != 0 && orbitalFollow != null)
+            // Get D-Pad input for gamepad zoom (separate buttons, not a vector)
+            float dpadUp = dpadZoomIn.ReadValue<float>();      // 1.0 when pressed, 0.0 otherwise
+            float dpadDown = dpadZoomOut.ReadValue<float>();   // 1.0 when pressed, 0.0 otherwise
+            float dpadZoomValue = dpadUp - dpadDown;           // +1 for zoom in, -1 for zoom out
+            
+            // Combine scroll and D-Pad
+            // D-Pad: Progressive zoom based on hold duration (multiplied by deltaTime)
+            // Scroll: Instant zoom based on scroll amount
+            float zoomInput;
+            if (Mathf.Abs(dpadZoomValue) > 0.1f)
+            {
+                // D-Pad held: apply progressive zoom (smooth increment per frame)
+                zoomInput = dpadZoomValue * 200f * Time.deltaTime; // Adjust 200f to change D-Pad zoom speed
+            }
+            else
+            {
+                // Mouse scroll
+                zoomInput = scrollValue;
+            }
+            
+            if (zoomInput != 0 && orbitalFollow != null)
             {
                 // Adjust zoom factor based on scroll input
                 // Positive scroll = zoom in (smaller factor), negative = zoom out (larger factor)
-                float zoomChange = scrollValue * zoomSensitivity * 0.01f;
+                float zoomChange = zoomInput * zoomSensitivity * 0.01f;
                 currentZoomFactor = Mathf.Clamp(currentZoomFactor - zoomChange, 
                     minZoom / initialCenterRadius,  // Min zoom as ratio of initial center radius
                     maxZoom / initialCenterRadius); // Max zoom as ratio of initial center radius
@@ -246,7 +340,6 @@ namespace Game.Player
             // Set target FOV based on sprint state AND actual movement
             // Only widen FOV if player is sprinting AND moving
             bool shouldUseSprintFOV = playerController.IsSprinting && playerController.IsMoving;
-            Debug.Log("isMoving: " + playerController.IsMoving);
             targetFOV = shouldUseSprintFOV ? sprintFOV : normalFOV;
 
             // Smoothly transition to target FOV
@@ -263,6 +356,9 @@ namespace Game.Player
             leftMouseButton?.Disable();
             rightMouseButton?.Disable();
             scrollAction?.Disable();
+            rightStickInput?.Disable();
+            dpadZoomIn?.Disable();
+            dpadZoomOut?.Disable();
         }
 
         // Public method to get camera forward direction (for player movement)

@@ -60,6 +60,7 @@ namespace Game.Player
         private void SetupInput()
         {
             // Create input actions programmatically
+            // Movement: WASD (Keyboard) or Left Stick (Gamepad)
             moveAction = new InputAction("Move", InputActionType.Value);
             moveAction.AddCompositeBinding("2DVector")
                 .With("Up", "<Keyboard>/w")
@@ -68,14 +69,20 @@ namespace Game.Player
                 .With("Right", "<Keyboard>/d");
             moveAction.AddBinding("<Gamepad>/leftStick");
 
+            // Jump: Space (Keyboard) or B/Cross/B (Gamepad buttonSouth)
+            // buttonSouth = Xbox A, PS Cross, Switch B
             jumpAction = new InputAction("Jump", binding: "<Keyboard>/space");
             jumpAction.AddBinding("<Gamepad>/buttonSouth");
 
+            // Sprint: Left Shift (Keyboard) or Left Trigger (Gamepad)
+            // leftTrigger = Xbox LT, PS L2, Switch ZL
             sprintAction = new InputAction("Sprint", binding: "<Keyboard>/leftShift");
-            sprintAction.AddBinding("<Gamepad>/leftStickPress");
+            sprintAction.AddBinding("<Gamepad>/leftTrigger");
 
+            // Crouch: Left Control (Keyboard) or Left Shoulder (Gamepad)
+            // leftShoulder = Xbox LB, PS L1, Switch L
             crouchAction = new InputAction("Crouch", binding: "<Keyboard>/leftCtrl");
-            crouchAction.AddBinding("<Gamepad>/buttonEast");
+            crouchAction.AddBinding("<Gamepad>/leftShoulder");
 
             // Enable actions
             moveAction.Enable();
