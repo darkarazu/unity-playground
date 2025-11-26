@@ -5,6 +5,66 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2025-11-26
+
+### Terrain Support for Hybrid ECS Architecture
+
+#### Added
+- **Terrain System**: Full terrain support with hybrid physics (Player + ECS NPCs)
+  - **TerrainPhysicsRuntime.cs**: Runtime ECS physics collider generation
+    - Samples heightmap data at runtime
+    - Converts to ECS `PhysicsCollider` using `TerrainCollider.Create()`
+    - Adds `LocalToWorld` component for proper world-space positioning
+    - Includes proper cleanup (`OnDestroy`) to prevent memory leaks
+  - **Hybrid Physics Support**: 
+    - Player collision via standard `TerrainCollider` (CharacterController)
+    - NPC collision via ECS `PhysicsCollider` (Unity.Physics)
+  - Both systems work simultaneously without interference
+- **Documentation**: `Terrain.md` comprehensive setup guide
+  - Step-by-step terrain creation and physics configuration
+  - Troubleshooting section for common issues
+  - Clear instructions for Main Scene placement (NOT subscene)
+- **Project Planning**: `ROADMAP.md` development roadmap
+  - 22 open world RPG mechanics researched and documented
+  - Ordered by implementation difficulty (Easy → Extremely Hard)
+  - ECS vs MonoBehaviour guidance for each system
+  - Short/Medium/Long term development timeline
+  - References from AAA titles (Skyrim, Witcher 3, Zelda, Elden Ring)
+
+#### Changed
+- **Terrain Workflow**: Terrain must be in Main Scene (not subscene)
+  - Ensures terrain remains visible in Play Mode
+  - Allows standard rendering while ECS physics entity runs separately
+- **NPC Positioning**: NPCs must be placed at terrain surface height
+  - Patrol centers initialize at spawn position
+  - Prevents floating waypoints when NPCs fall to terrain surface
+
+#### Fixed
+- **Unity Physics API Compatibility**: Fixed for Unity 6
+  - Removed `TerrainGeometry` struct (not exposed in API)
+  - Used direct parameter overload: `TerrainCollider.Create(heights, size, scale, method)`
+  - Fixed `CollisionMethod` enum (changed `Triangulate` → `VertexSamples`)
+- **Shared Component Error**: Changed `SetSharedComponentManaged` to `AddSharedComponentManaged`
+  - `PhysicsWorldIndex` is a shared component, needs Add not Set
+- **ECS Physics Entity Positioning**: Added `LocalToWorld` component
+  - Critical for Unity.Physics to locate entities in world space
+  - Static bodies require both `LocalTransform` and `LocalToWorld`
+- **Memory Leak**: Proper blob asset disposal in `OnDestroy()`
+  - Store `BlobAssetReference<Collider>` and dispose when MonoBehaviour destroyed
+  - Destroy terrain entity when component removed
+
+#### Technical Notes
+- **Runtime Approach**: Terrain generates ECS collider at runtime (not baked)
+  - Allows terrain to remain as visible GameObject in Main Scene
+  - `TerrainPhysicsRuntime` runs in `Start()`, creates entity in ECS world
+- **Collision Methods**: Using `VertexSamples` for performance
+  - Fast approximation suitable for smooth terrain
+  - Can be changed to other methods if needed
+- **Debug Logging**: Green console message confirms successful terrain entity creation
+  - Displays resolution, scale, and position for verification
+
+---
+
 ## [0.4.0] - 2025-11-25
 
 ### Third Person Camera System - WoW-Style Controls

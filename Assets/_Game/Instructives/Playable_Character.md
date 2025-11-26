@@ -114,10 +114,6 @@ NPCs use ECS queries to find the player (`SystemAPI.Query<>().WithAll<PlayerTag>
 
 ---
 
-## Setting Up the Ground
-
-**Critical:** For both the player and NPCs to detect the ground, it must be in a **subscene** with a **Physics Shape** component.
-
 ### Why Subscene is Required
 
 - Player uses Unity's standard physics (CharacterController)
@@ -157,6 +153,12 @@ The ground needs **both** physics systems:
    - ✅ This creates an ECS physics entity for NPCs
 
 #### 4. Close the Subscene
+
+1. In Hierarchy, click the **arrow** next to your subscene to collapse it
+2. **This triggers baking** - Physics Shape becomes an ECS entity
+3. The standard collider remains for GameObject physics
+
+#### 3. Close the Subscene
 
 1. In Hierarchy, click the **arrow** next to your subscene to collapse it
 2. **This triggers baking** - Physics Shape becomes an ECS entity

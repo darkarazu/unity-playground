@@ -167,7 +167,7 @@ namespace Game.Player
         public bool IsCrouching => isCrouching;
         public Vector3 Velocity => velocity;
         
-        // Check if player has horizontal movement
-        public bool IsMoving => characterController.velocity.sqrMagnitude > 0.1f;
+        // Check if player has horizontal movement input (more reliable than velocity on terrain)
+        public bool IsMoving => moveAction.ReadValue<Vector2>().sqrMagnitude > 0.01f;
     }
 }

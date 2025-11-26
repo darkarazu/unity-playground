@@ -246,6 +246,7 @@ namespace Game.Player
             // Set target FOV based on sprint state AND actual movement
             // Only widen FOV if player is sprinting AND moving
             bool shouldUseSprintFOV = playerController.IsSprinting && playerController.IsMoving;
+            Debug.Log("isMoving: " + playerController.IsMoving);
             targetFOV = shouldUseSprintFOV ? sprintFOV : normalFOV;
 
             // Smoothly transition to target FOV
